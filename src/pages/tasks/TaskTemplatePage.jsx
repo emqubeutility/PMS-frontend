@@ -9,7 +9,6 @@ import {
   Cloud,
   CalendarRange,
   CopyCheck,
-  Infinity as InfinityIcon,
   LayoutTemplate,
   ListChecks,
   ListPlus,
@@ -25,12 +24,11 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { TimePicker } from "@/components/ui/TimePicker";
 import { EmptyState, ErrorAlert } from "@/components/ui/Display";
 import { Dropdown } from "@/components/ui/Dropdown";
-import { Checkbox, Field, Switch } from "@/components/ui/Field";
+import { Checkbox, Field } from "@/components/ui/Field";
 import { FullPageLoader, Spinner } from "@/components/ui/Loader";
 import { Modal } from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { useToast } from "@/components/ui/toast-context";
-import { TASK_PRIORITY_OPTIONS } from "@/lib/constants";
 import { blockNonNumericKeys } from "@/lib/percent";
 import { todayIso, zonedToIso } from "@/lib/timezone";
 import { formatMinutes } from "./TaskListPage";
@@ -40,8 +38,6 @@ import { TaskPlanSection } from "./TaskPlanSection";
 // people & plan copied into every new pick (and by "Apply to all")
 const PLAN_KEYS = [
   "ownerId",
-  "priority",
-  "isContinuous",
   "startDate",
   "startTime",
   "endDate",
@@ -86,7 +82,6 @@ const matchesSearch = (t, search) =>
 
 /** Problems of one picked task, or null. */
 function rowError(r) {
-  if (r.isContinuous) return null;
   if (!r.startDate) return "Select the earliest start";
   if (!r.endDate) return "Select the end before date";
   if (zonedToIso(r.endDate, r.endTime) <= zonedToIso(r.startDate, r.startTime))
@@ -109,8 +104,6 @@ export default function TaskTemplatePage() {
   const [projectId, setProjectId] = useState(null);
   const [defaults, setDefaults] = useState({
     ownerId: user.id,
-    priority: "medium",
-    isContinuous: false,
     startDate: todayIso(),
     startTime: "09:00",
     endDate: "",
@@ -268,12 +261,8 @@ export default function TaskTemplatePage() {
         templateId: r.templateId,
         ownerId: r.ownerId,
         assignedTo: r.assignedTo,
-        priority: r.priority,
-        isContinuous: r.isContinuous,
-        plannedStart: r.isContinuous
-          ? null
-          : zonedToIso(r.startDate, r.startTime),
-        plannedEnd: r.isContinuous ? null : zonedToIso(r.endDate, r.endTime),
+        plannedStart: zonedToIso(r.startDate, r.startTime),
+        plannedEnd: zonedToIso(r.endDate, r.endTime),
         estimatedMinutes:
           Number(r.estH || 0) * 60 + Number(r.estM || 0) || null,
       })),
@@ -466,55 +455,15 @@ export default function TaskTemplatePage() {
                           onChange={(v) => setDefault("ownerId", v)}
                         />
                       </Field>
-                      <Field label="Priority">
-                        <Dropdown
-                          options={TASK_PRIORITY_OPTIONS}
-                          value={defaults.priority}
-                          onChange={(v) => setDefault("priority", v)}
-                        />
-                      </Field>
-                      <Field label="Continuous" className="tpl-span2">
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            minHeight: 40,
-                          }}
-                        >
-                          <Switch
-                            checked={defaults.isContinuous}
-                            onChange={(v) => setDefault("isContinuous", v)}
-                            label={
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 6,
-                                }}
-                              >
-                                <InfinityIcon
-                                  style={{ width: 16, height: 16 }}
-                                />{" "}
-                                Ongoing{" "}
-                                <span className="muted small">
-                                  (no earliest start / end before)
-                                </span>
-                              </span>
-                            }
-                          />
-                        </div>
-                      </Field>
                       <Field label="Earliest start" className="tpl-span2">
                         <div className="tpl-dt">
                           <DatePicker
                             value={defaults.startDate}
                             clearable={false}
-                            disabled={defaults.isContinuous}
                             onChange={(v) => setDefault("startDate", v)}
                           />
                           <TimePicker
                             value={defaults.startTime}
-                            disabled={defaults.isContinuous}
                             onChange={(v) => setDefault("startTime", v)}
                           />
                         </div>
@@ -524,14 +473,12 @@ export default function TaskTemplatePage() {
                           <DatePicker
                             value={defaults.endDate}
                             clearable={false}
-                            disabled={defaults.isContinuous}
                             min={defaults.startDate || undefined}
                             placeholder="Date"
                             onChange={(v) => setDefault("endDate", v)}
                           />
                           <TimePicker
                             value={defaults.endTime}
-                            disabled={defaults.isContinuous}
                             onChange={(v) => setDefault("endTime", v)}
                           />
                         </div>
@@ -560,12 +507,7 @@ export default function TaskTemplatePage() {
                         // one-line summary shown while collapsed
                         const summary = [
                           users.find((u) => u.id === r.assignedTo)?.name ?? "—",
-                          TASK_PRIORITY_OPTIONS.find(
-                            (o) => o.value === r.priority,
-                          )?.label,
-                          r.isContinuous
-                            ? "Continuous"
-                            : `${r.startDate ? formatDate(r.startDate) : "—"} → ${r.endDate ? formatDate(r.endDate) : "—"}`,
+                          `${r.startDate ? formatDate(r.startDate) : "—"} → ${r.endDate ? formatDate(r.endDate) : "—"}`,
                         ];
                         return (
                           <div
@@ -646,15 +588,6 @@ export default function TaskTemplatePage() {
                                       }
                                     />
                                   </Field>
-                                  <Field label="Priority">
-                                    <Dropdown
-                                      options={TASK_PRIORITY_OPTIONS}
-                                      value={r.priority}
-                                      onChange={(v) =>
-                                        setRow(r.templateId, { priority: v })
-                                      }
-                                    />
-                                  </Field>
                                   <Field label="Estimate">
                                     <div className="tpl-est">
                                       <div className="input-group">
@@ -713,7 +646,6 @@ export default function TaskTemplatePage() {
                                       <DatePicker
                                         value={r.startDate}
                                         clearable={false}
-                                        disabled={r.isContinuous}
                                         placeholder="Date"
                                         onChange={(v) =>
                                           setRow(r.templateId, { startDate: v })
@@ -721,7 +653,6 @@ export default function TaskTemplatePage() {
                                       />
                                       <TimePicker
                                         value={r.startTime}
-                                        disabled={r.isContinuous}
                                         onChange={(v) =>
                                           setRow(r.templateId, { startTime: v })
                                         }
@@ -736,7 +667,6 @@ export default function TaskTemplatePage() {
                                       <DatePicker
                                         value={r.endDate}
                                         clearable={false}
-                                        disabled={r.isContinuous}
                                         min={r.startDate || undefined}
                                         placeholder="Date"
                                         onChange={(v) =>
@@ -745,38 +675,12 @@ export default function TaskTemplatePage() {
                                       />
                                       <TimePicker
                                         value={r.endTime}
-                                        disabled={r.isContinuous}
                                         onChange={(v) =>
                                           setRow(r.templateId, { endTime: v })
                                         }
                                       />
                                     </div>
                                   </Field>
-                                </div>
-                                <div className="tpl-task-foot">
-                                  <Switch
-                                    checked={r.isContinuous}
-                                    onChange={(v) =>
-                                      setRow(r.templateId, { isContinuous: v })
-                                    }
-                                    label={
-                                      <span
-                                        style={{
-                                          display: "inline-flex",
-                                          alignItems: "center",
-                                          gap: 6,
-                                        }}
-                                      >
-                                        <InfinityIcon
-                                          style={{ width: 15, height: 15 }}
-                                        />{" "}
-                                        Continuous{" "}
-                                        <span className="muted small">
-                                          (no dates)
-                                        </span>
-                                      </span>
-                                    }
-                                  />
                                 </div>
                               </>
                             )}
@@ -835,13 +739,6 @@ export default function TaskTemplatePage() {
               >
                 {picker.draft.size} of {list.length} selected
               </span>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setPicker(null)}
-              >
-                Cancel
-              </button>
               <button
                 type="button"
                 className="btn btn-primary"

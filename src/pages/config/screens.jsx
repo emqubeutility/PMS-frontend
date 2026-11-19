@@ -514,7 +514,7 @@ export const CONFIG_SCREENS = [
     key: 'customers',
     screen: SCREENS.CUSTOMERS,
     title: 'Customers',
-    breadcrumb: 'Customers & Vendors',
+    breadcrumb: 'Customers',
     singular: 'customer',
     icon: Building2,
     search: 'Search customers…',
