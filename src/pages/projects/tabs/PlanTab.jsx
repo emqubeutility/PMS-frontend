@@ -62,7 +62,7 @@ const TONE_BADGE = {
   info: 'badge-info', success: 'badge-success', danger: 'badge-danger', warning: 'badge-warning', muted: '' };
 
 /**
- * Plan tab (project owner only): the project's task groups planned week by week, as a timeline –
+ * Plan tab: the project's task groups planned week by week, as a timeline –
  * one row per task group, one column per week. Click a free week to plan the group there; drag a bar's
  * right (or left) edge to extend it over more weeks, drag the bar to move it, × removes it.
  * Changes are kept on the page until "Save plan". A plan only – no tasks or time are created.

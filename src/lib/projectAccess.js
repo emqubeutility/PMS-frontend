@@ -16,7 +16,7 @@ export const PROJECT_TABS = [
   { key: 'project', label: 'Project', editable: true },
   { key: 'users', label: 'Users', editable: true },
   { key: 'estimate', label: 'Estimate', editable: true },
-  { key: 'plan', label: 'Plan', editable: true, note: 'weekly plan, task progress – project owner only' },
+  { key: 'plan', label: 'Plan', editable: true, note: 'weekly plan, task progress' },
   { key: 'commercial', label: 'Commercial', editable: true, note: 'project value, costs, rates' },
   { key: 'analysis', label: 'Analysis', editable: false },
   { key: 'history', label: 'History', editable: false },

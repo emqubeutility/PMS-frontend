@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   Cloud,
+  Info,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -296,6 +297,7 @@ export default function TaskFormPage() {
   })();
   // a project task: assigned to someone on the project (its owner or a member, project Users tab)
   const selectedProject = needsProject ? (options.data?.projects ?? []).find((p) => p.id === projectId) : null;
+  const projectGroupsMissing = Boolean(category?.isProject && selectedProject && !selectedProject.taskGroupIds?.length);
   const assigneeOptions = selectedProject
     ? userOptions.filter((o) => selectedProject.peopleIds.includes(o.value) || o.value === task.data?.assignedTo)
     : userOptions;
@@ -466,6 +468,12 @@ export default function TaskFormPage() {
                         value={field.value}
                         onChange={(v) => {
                           field.onChange(v);
+                          // a group the new project does not use no longer fits
+                          const gids = (options.data?.projects ?? []).find((p) => p.id === v)?.taskGroupIds ?? [];
+                          if (!gids.includes(getValues("taskGroupId"))) {
+                            setValue("taskGroupId", null);
+                            setValue("taskTypeId", null);
+                          }
                           // the project owner owns the task by default; the assignee must be on the project
                           const pr = (options.data?.projects ?? []).find((p) => p.id === v);
                           if (pr && canAssign) {
@@ -478,6 +486,12 @@ export default function TaskFormPage() {
                   />
                 </Field>
               )}
+              {projectGroupsMissing && (
+                <div className="alert alert-warning tf-12" style={{ marginBottom: 4 }}>
+                  <Info />
+                  <div>The project plan and estimate are not set. Set the estimated hours and the effort of the task groups on the project's Estimate tab first, then add tasks.</div>
+                </div>
+              )}
               <Field label="Task group" className="tf-6" error={err("taskGroupId")}>
                 <Controller
                   name="taskGroupId"
@@ -486,9 +500,12 @@ export default function TaskFormPage() {
                     <Dropdown
                       search
                       clearable
-                      placeholder="Select task group"
+                      disabled={category?.isProject && !projectGroupsMissing && !selectedProject}
+                      placeholder={category?.isProject && !selectedProject ? "Select project first" : projectGroupsMissing ? "No task groups" : "Select task group"}
                       options={(groups.data ?? [])
                         .filter((g) => !category?.taskGroupIds?.length || category.taskGroupIds.includes(g.id))
+                        // a project task: only the project's own task groups (its Estimate tab)
+                        .filter((g) => !category?.isProject || selectedProject?.taskGroupIds?.includes(g.id))
                         .map((g) => ({
                           value: g.id,
                           label: g.name,

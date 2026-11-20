@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronsDown, ChevronsUp, Copy, Ellipsis, Pencil, Printer, Trash2 } from 'lucide-react';
 import { projectsApi } from '@/api/endpoints';
 import { errorMessage } from '@/api/client';
-import { useAuth, usePermissions, useProjectAccess } from '@/auth/auth-context';
+import { usePermissions, useProjectAccess } from '@/auth/auth-context';
 import { Topbar } from '@/components/layout/Topbar';
 import { ActionMenu } from '@/components/ui/Dropdown';
 import { ErrorAlert, StageBadge } from '@/components/ui/Display';
@@ -25,7 +25,6 @@ export default function ProjectDetailsPage() {
   const { id } = useParams();
   const perms = usePermissions(SCREENS.PROJECTS);
   const access = useProjectAccess();
-  const { user } = useAuth(); // the Plan tab is the owner's
   const navigate = useNavigate();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -68,7 +67,7 @@ export default function ProjectDetailsPage() {
   if (isError) return error?.response?.status === 404 ? <NotFoundPage what="Project" /> : <ErrorAlert>{errorMessage(error)}</ErrorAlert>;
 
   // tabs hidden for the role (and Commercial for anyone but the project's manager) fall back to the first visible one
-  const current = usableTab(tab, p, access.tab, user.id);
+  const current = usableTab(tab, p, access.tab);
   const canEditTab = (t) => perms.edit && access.tab(t) === 'edit';
   // Edit project opens the edit page on a tab the role can change
   const editTab = ['project', 'users', 'estimate'].includes(current) && canEditTab(current) ? current : ['project', 'users', 'estimate'].find(canEditTab);

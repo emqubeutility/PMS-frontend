@@ -1,5 +1,5 @@
 import { Calculator, CalendarRange, ChartColumn, FileText, Flag, FolderKanban, History, RefreshCw, Users, Wallet } from 'lucide-react';
-import { useAuth, useProjectAccess } from '@/auth/auth-context';
+import { useProjectAccess } from '@/auth/auth-context';
 import { Avatar, StageBadge } from '@/components/ui/Display';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format';
 
@@ -13,7 +13,7 @@ export const TABS = [
   { key: 'project', label: 'Project', icon: FileText },
   { key: 'users', label: 'Users', icon: Users },
   { key: 'estimate', label: 'Estimate', icon: Calculator },
-  { key: 'plan', label: 'Plan', icon: CalendarRange, ownerOnly: true }, // weekly plan by task group – the project owner only
+  { key: 'plan', label: 'Plan', icon: CalendarRange }, // weekly plan by task group – by the role's Project access
   { key: 'commercial', label: 'Commercial', icon: Wallet, commercial: true }, // only when the API allows it (role's project access)
   { key: 'analysis', label: 'Analysis', icon: ChartColumn },
   { key: 'history', label: 'History', icon: History },
@@ -31,22 +31,21 @@ export const pct = (a, b) => (b ? Math.round((a / b) * 10000) / 100 : 0);
 const dueLabel = (d) => (d ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' }).format(new Date(`${d}T00:00:00`)) : '—');
 const shortDate = (d) => new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' }).format(new Date(`${d}T00:00:00`));
 
-/** Tabs the user may see: none hidden for their role, Commercial only when the API allows it (p.canSeeCommercial), Plan only for the owner (and not hidden for the role). */
-export const visibleTabs = (p, tabAccess = () => 'edit', userId = null) =>
-  TABS.filter((t) => (!t.ownerOnly || p?.ownerId === userId) && tabAccess(t.key) !== 'hidden' && (!t.commercial || p?.canSeeCommercial));
+/** Tabs the user may see: none hidden for their role, Commercial only when the API allows it (p.canSeeCommercial), Plan by the role's Project access. */
+export const visibleTabs = (p, tabAccess = () => 'edit') =>
+  TABS.filter((t) => tabAccess(t.key) !== 'hidden' && (!t.commercial || p?.canSeeCommercial));
 
 /** The tab to show: the asked one, or the first one the user may see. */
-export const usableTab = (tab, p, tabAccess, userId) => {
-  const tabs = visibleTabs(p, tabAccess, userId);
+export const usableTab = (tab, p, tabAccess) => {
+  const tabs = visibleTabs(p, tabAccess);
   return tabs.some((t) => t.key === tab) ? tab : (tabs[0]?.key ?? tab);
 };
 
 export function TabBar({ tab, onSelect, p }) {
   const access = useProjectAccess();
-  const { user } = useAuth();
   return (
     <div className="tabs" role="tablist" style={{ marginTop: 20 }}>
-      {visibleTabs(p, access.tab, user.id).map((t) => (
+      {visibleTabs(p, access.tab).map((t) => (
         <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} className={`tab${tab === t.key ? ' is-active' : ''}`} onClick={() => onSelect(t.key)}>
           <span className="tab-ico">
             <t.icon />

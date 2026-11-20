@@ -20,7 +20,7 @@ import { CommercialTab } from './tabs/CommercialTab';
 import { EstimateEditor, MembersEditor, memberRow, ProjectFields, UpdateTab } from './tabs/EditTabs';
 import { AnalysisView, EstimateView, HistoryView, ProjectView, quotedHours, UsersView } from './tabs/ViewTabs';
 import { PlanTab } from './tabs/PlanTab';
-import { useAuth, useProjectAccess } from '@/auth/auth-context';
+import { useProjectAccess } from '@/auth/auth-context';
 import { PROJECT_FIELDS } from '@/lib/projectAccess';
 
 const optionalNumber = z
@@ -126,7 +126,6 @@ export default function ProjectEditPage() {
   const queryClient = useQueryClient();
   const [tabAsked, setTab] = useState(() => tabFromHash('update'));
   const access = useProjectAccess();
-  const { user } = useAuth(); // the Plan tab is the owner's
 
   const project = useQuery({ queryKey: ['projects', id], queryFn: () => projectsApi.get(id), retry: false });
   const groups = useQuery({ queryKey: ['masters', 'project-task-groups'], queryFn: () => mastersApi.list('project-task-groups'), staleTime: 5 * 60 * 1000 });
@@ -208,7 +207,7 @@ export default function ProjectEditPage() {
     return project.error?.response?.status === 404 ? <NotFoundPage what="Project" /> : <ErrorAlert>{errorMessage(project.error)}</ErrorAlert>;
   }
 
-  const tab = usableTab(tabAsked, p, access.tab, user.id);
+  const tab = usableTab(tabAsked, p, access.tab);
   const canEditTab = (t) => access.tab(t) === 'edit';
   const onSubmit = (values) => {
     const body = toPayload(values, access);
